@@ -1,4 +1,5 @@
 from openpyxl import Workbook
+from openpyxl import load_workbook
 from openpyxl.styles import Alignment
 from openpyxl.worksheet.dimensions import ColumnDimension, DimensionHolder
 from openpyxl.utils import get_column_letter
@@ -20,7 +21,7 @@ def strfdelta(tdelta, fmt):
     return t.substitute(**d)
 
 
-def createReport(DBController:DBConnect, telegramId:int, monthNumber:int):
+def createReport(DBController:DBConnect, telegramId:int, monthNumber:int)->str:
     wb = Workbook()
     ws = wb.active
 
@@ -45,7 +46,7 @@ def createReport(DBController:DBConnect, telegramId:int, monthNumber:int):
             ws.cell(row=rowIter, column=2, value=date.strftime('%H:%M')).number_format = 'HH:MM'
         elif type == 1:
             ws.cell(row=rowIter, column=3, value=date.strftime('%H:%M')).number_format = 'HH:MM'
-            dinnerTime = connect.getDinnerTime(id)
+            dinnerTime = DBController.getDinnerTime(id)
             ws.cell(row=rowIter, column=4, value=strfdelta(datetime.timedelta(minutes=dinnerTime), '%H:%M')).number_format = 'HH:MM'
             startTimeCell = ws.cell(row=rowIter, column=2).coordinate
             endTimeCell = ws.cell(row=rowIter, column=3).coordinate
@@ -68,4 +69,11 @@ def createReport(DBController:DBConnect, telegramId:int, monthNumber:int):
         dim_holder[get_column_letter(col)] = ColumnDimension(ws, min=col, max=col, width=15)
     ws.column_dimensions = dim_holder
     month = datetime.date(1900, monthNumber, 1).strftime('%B')
-    wb.save(f"{month}.xlsx")
+    fileName = f"{month}{telegramId}.xlsx"
+    wb.save(fileName)
+    openDocument(fileName)
+    return fileName
+
+def openDocument(fileName):
+    wb = load_workbook(fileName)
+    wb.save(fileName)

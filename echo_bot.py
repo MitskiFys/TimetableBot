@@ -4,6 +4,10 @@ from telebot import types
 import config
 from mysqlAPI import DBConnect, StateType
 import time
+from reportAPI import createReport
+import os
+import signal
+import sys
 
 bot = telebot.TeleBot(config.TOKEN, parse_mode=None)
 DBController = DBConnect()
@@ -95,17 +99,17 @@ def printMenu(message):
 	come = types.KeyboardButton('Пришел')
 	gone = types.KeyboardButton('Ушел') 
 	markup.row(come, gone)
-	msg = bot.send_message(message.chat.id, 'Выбери действие', reply_markup=markup)
-	bot.register_next_step_handler(msg, process_new_task)
+	bot.send_message(message.chat.id, 'Выбери действие', reply_markup=markup)
 
-@bot.message_handler(commands=['file'])
+@bot.message_handler(commands=['report'])
 def showButton(message):
-	doc = open('test.xlsx', 'rb')
+	filename = createReport(DBController, message.from_user.id, 9)
+	doc = open(filename, 'rb')
 	bot.send_document(message.from_user.id, doc)
-	markup = types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
-	itembtn1 = types.KeyboardButton('/file')
-	markup.add(itembtn1)
-	bot.reply_to(message, "Choose one letter:", reply_markup=markup)
+	bot.send_message(message.from_user.id, "Данный документ надо будет открыть и выполнить функцию просчета общих часов")
+	bot.send_message(message.from_user.id, "Это проблема библиотеки, что она не может сразу просчитать формулы")
+	os.remove(filename)
+	printMenu(message)
 
 @bot.message_handler(func=lambda message: True)
 def process_new_task(message):
@@ -201,11 +205,18 @@ def getId(message):
 	markup.add(itembtn1)
 	bot.reply_to(message, "hueta123", reply_markup=markup)
 
+def signal_handler(sig, frame):
+	DBController.closeConnection()
+	print('You pressed Ctrl+C!')
+	sys.exit(0)
+
 if __name__ == "__main__":
+	signal.signal(signal.SIGINT, signal_handler)
 	while True:
 		try:
 			bot.polling(none_stop=True, timeout=30)
 		except:
 			print("Bot restart")
 			time.sleep(15)
+
 

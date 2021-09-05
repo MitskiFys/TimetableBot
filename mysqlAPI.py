@@ -26,6 +26,9 @@ class DBConnect:
             self.isInit = False
         self.isInit = True
 
+    def closeConnection(self):
+        self.connection.close()
+
     def addUser(self, telegramId:int, name:str, surname:str, email:str):
         cursor = self.connection.cursor()
         query = ("INSERT INTO userData(telegramId, name, surname, email) VALUES(%s, %s, %s, %s)")
